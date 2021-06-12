@@ -23,4 +23,4 @@
  ../../include/eagle_soc.h ../../include/c_types.h \
  ../include/driver/esp8266_station.h ../include/driver/tcp_server.h \
  ../include/driver/tcp_client.h ../include/driver/oled.h \
- ../include/driver/i2c_master.h
+ ../include/driver/i2c_master.h ../include/driver/oledfont.h

@@ -20,5 +20,12 @@
  ../../include/user_interface.h ../../include/ip_addr.h \
  ../../include/queue.h ../../include/spi_flash.h ../../include/gpio.h \
  ../include/driver/ui.h ../include/driver/oled.h ../../include/c_types.h \
- ../include/driver/i2c_master.h ../include/driver/esp8266_sntp.h \
- ../include/driver/tcp_client.h
+ ../include/driver/i2c_master.h ../include/driver/oledfont.h \
+ ../include/driver/esp8266_sntp.h ../include/driver/tcp_client.h \
+ ../include/driver/myhttp.h ../../include/ip_addr.h \
+ ../../include/espconn.h \
+ /opt/xtensa-lx106-elf/xtensa-lx106-elf/include/stdio.h \
+ /opt/xtensa-lx106-elf/lib/gcc/xtensa-lx106-elf/4.8.2/include/stdarg.h \
+ /opt/xtensa-lx106-elf/xtensa-lx106-elf/include/sys/types.h \
+ /opt/xtensa-lx106-elf/xtensa-lx106-elf/include/machine/types.h \
+ /opt/xtensa-lx106-elf/xtensa-lx106-elf/include/sys/stdio.h

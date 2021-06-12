@@ -6,6 +6,9 @@
 #include "driver/oled.h"
 #include "driver/esp8266_sntp.h"
 #include "driver/tcp_client.h"
+#include "driver/myhttp.h"
+#include "stdio.h"
+
 
 //静态全局变量
 static os_timer_t ui_timer;	//系统指示灯运行定时器
@@ -21,39 +24,44 @@ static os_timer_t ui_timer;	//系统指示灯运行定时器
  * Returns      : none
  *******************************************************************************/
 static void ICACHE_FLASH_ATTR ui_display(void* arg) {
-//	static uint16_t cnt = 0,i;
-//	if (cnt >= (WEATHER_DISPLAY_PERIOD_MS / UI_DISPLAY_PERIOD_MS)) {
-//		weather_t* weather=get_weather_info();
-//
-//	}
-//	cnt++;
-//	uint16_t i;
-//	weather_t* weather=get_weather_info();
-//	for(i=0;i<WEATHER_DAYS;i++)
-//	{
-//		OLED_Clear();
-//		delay_ms(1000);
-//		system_soft_wdt_feed();			// 喂狗(防止ESP8266复位)
-//	}
-//
-//	delay_ms(1000);
-//	system_soft_wdt_feed();			// 喂狗(防止ESP8266复位)
-
-
-	mytime_t * real_time= get_real_time();
-	if(strlen(real_time->time)!=0)
-	{
-		os_printf("\r\nbegin time:%d\r\n",system_get_time()/1000);
+	char buf[16];
+	static uint16_t cnt = 0;
+	static uint16_t day_index=0;
+	if (cnt >= (WEATHER_DISPLAY_PERIOD_MS / UI_DISPLAY_PERIOD_MS)) {
+		char* days[]={"111","222","333"};
+		weather_t* weather=get_weather_info();
+		if(strlen(weather[day_index].high)==0)
+		{
+			return ;
+		}
 		OLED_Clear();
-		os_printf("\r\nclear time:%d\r\n",system_get_time()/1000);
-		OLED_ShowString(0, 0, "Shenzhen");
-		OLED_ShowString(0, 2, real_time->time);
-		OLED_ShowString(0, 4, real_time->date);
-		OLED_ShowString(0, 6, real_time->week);
+		OLED_ShowString(0, 0, days[day_index]);
+		os_sprintf(buf,"%s-%s",weather[day_index].low,weather[day_index].high);
+		OLED_ShowString(0,2,buf);
+		OLED_ShowString(0,4,weather[day_index].text_day);
+		os_sprintf(buf,"%s%",weather[day_index].humidity);
+		OLED_ShowString(0,6,buf);
+		day_index=(day_index+1)%WEATHER_DAYS;
 
+		cnt=(0==day_index)?0:cnt;
 		system_soft_wdt_feed();			// 喂狗(防止ESP8266复位)
-		os_printf("\r\nend time:  %d\r\n",system_get_time()/1000);
 	}
+	else
+	{
+		mytime_t * real_time= get_real_time();
+		if(strlen(real_time->time)!=0)
+		{
+			const hanzi_t arr[]={HANZI_SHEN,HANZI_ZHEN,	HANZI_JIN,
+					HANZI_MING,
+					HANZI_HOU,
+					HANZI_TIAN,};
+			OLED_ShowHanzi(0,0,arr,sizeof(arr)/sizeof(arr[0]));
+			OLED_ShowString_LineCenter(2, real_time->time);
+			OLED_ShowString_LineCenter(4, real_time->date);
+			OLED_ShowString_LineCenter(6, real_time->week);
+		}
+	}
+	cnt++;
 }
 /******************************************************************************
  * FunctionName : ui_display_start
