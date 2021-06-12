@@ -22,6 +22,6 @@ typedef struct {
 void  send_weather_http_request(struct espconn *espconn);
 void  recvice_weather_data(char *in_data,unsigned short in_len);
 weather_t* get_weather_info(void);
-void ICACHE_FLASH_ATTR  my_http_init(void);
+void ICACHE_FLASH_ATTR  myhttp_init(void);
 
 #endif //MY_HTTP_H

@@ -119,6 +119,26 @@ static void ICACHE_FLASH_ATTR ge_humidity(const char *json_data, uint8_t index,
 					out_len))
 		os_printf("index:%d,humidity:%s%\r\n", index, out_buf);
 }
+//获取白天天气码
+static void ICACHE_FLASH_ATTR get_code_day(const char *json_data, uint8_t index,
+		char *out_buf, uint16_t out_len) {
+	const char *str_key = "\"code_day\":\"";
+	const char *str_bound = "\"}";
+	if (FOUND_VALUE_OK
+			== find_value_by_key(json_data, index, str_key, str_bound, out_buf,
+					out_len))
+		os_printf("index:%d,humidity:%s%\r\n", index, out_buf);
+}
+//获取晚上天气码
+static void ICACHE_FLASH_ATTR get_code_night(const char *json_data, uint8_t index,
+		char *out_buf, uint16_t out_len) {
+	const char *str_key = "\"code_night\":\"";
+	const char *str_bound = "\"}";
+	if (FOUND_VALUE_OK
+			== find_value_by_key(json_data, index, str_key, str_bound, out_buf,
+					out_len))
+		os_printf("index:%d,humidity:%s%\r\n", index, out_buf);
+}
 static void ICACHE_FLASH_ATTR analysis_weather_json(void *arg) {
 	uint8_t i;
 	const char *json_data=(const char *)arg;
@@ -133,6 +153,10 @@ static void ICACHE_FLASH_ATTR analysis_weather_json(void *arg) {
 				sizeof(weather[i].rainfall));
 		ge_humidity(json_data, i + 1, weather[i].humidity,
 				sizeof(weather[i].humidity));
+		get_code_day(json_data, i + 1, weather[i].code_day,
+				sizeof(weather[i].code_day));
+		get_code_night(json_data, i + 1, weather[i].code_night,
+				sizeof(weather[i].code_night));
 	}
 }
 
@@ -168,7 +192,7 @@ weather_t * ICACHE_FLASH_ATTR get_weather_info(void) {
 	return weather;
 }
 //http初始化
-void ICACHE_FLASH_ATTR  my_http_init(void)
+void ICACHE_FLASH_ATTR  myhttp_init(void)
 {
 	os_memset(&weather, 0, sizeof(weather));	//天气信息清零
 }

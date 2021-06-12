@@ -220,22 +220,25 @@ void ICACHE_FLASH_ATTR OLED_ShowString(u8 x, u8 y, u8 * Show_char) {
 		N_Char++; 				// 指向下一个字符
 	}
 }
-// 在指定坐标起始处显示字符串
+// 在指定行中间位置显示字符串，其余位置自动清空
 //-------------------------------------------------------------------
 void ICACHE_FLASH_ATTR OLED_ShowString_LineCenter(u8 y, u8 * Show_char) {
-	u8 N_Char = 0, x;		// 字符序号
+	u8 x, i;		// 字符序号
 	u16 char_len = strlen(Show_char);
 	u16 max_char_len = Max_Column / 8;
 	char_len = (char_len >= max_char_len) ? max_char_len : char_len;
 	u16 space_len = max_char_len - char_len;
-	for (x = 0; x < space_len / 2; x++) {
-		OLED_ShowChar(x * 8, y, ' '); 	// 显示一个空格字符
+	for (i = 0, x = 0; i < space_len / 2; i++) {
+		OLED_ShowChar(x, y, ' '); 	// 显示一个空格字符
+		x += 8;
 	}
-	for (x = space_len / 2; x < (char_len + space_len / 2); x++) {
-		OLED_ShowChar(x * 8, y, Show_char[x - space_len / 2]); 	// 显示一个字符
+	for (i = 0; i < char_len; i++) {
+		OLED_ShowChar(x, y, Show_char[i]); 	// 显示一个字符
+		x += 8;
 	}
-	for (x = space_len / 2 + char_len; x < max_char_len; x++) {
-		OLED_ShowChar(x * 8, y, ' '); 	// 显示一个空格字符
+	for (i = 0; i < space_len / 2; i++) {
+		OLED_ShowChar(x, y, ' '); 	// 显示一个空格字符
+		x += 8;
 	}
 }
 //-------------------------------------------------------------------
@@ -333,16 +336,36 @@ void ICACHE_FLASH_ATTR OLED_ShowOneHanzi(u8 x, u8 y, hanzi_t hanzi_num) {
 
 // 在指定坐标处显示一组汉字
 //-----------------------------------------------------------------------------
-void ICACHE_FLASH_ATTR OLED_ShowHanzi(u8 x, u8 y, const hanzi_t *arr,u8 len) {
+void ICACHE_FLASH_ATTR OLED_ShowHanzi(u8 x, u8 y, const hanzi_t *arr, u8 len) {
 	u8 i = 0;
-	for(i=0;i<len;i++)
-	{
-		OLED_ShowOneHanzi(x,  y, arr[i]);
-		x+=16;// 列数加16，一个汉字占16列
+	for (i = 0; i < len; i++) {
+		OLED_ShowOneHanzi(x, y, arr[i]);
+		x += 16;  	// 列数加16，一个汉字占16列
 		if (x >= 128) {
 			x = 0;
 			y += 2;
 		} 	// 当x>=128，另起一页
+	}
+}
+// 在指定行中间位置显示汉字，其余位置自动清空
+//-------------------------------------------------------------------
+void ICACHE_FLASH_ATTR OLED_ShowHanzi_LineCenter(u8 y, const hanzi_t *arr,
+		u8 len) {
+	u8 x, i;		// 字符序号
+	u16 max_len = Max_Column / 16;
+	len = (len >= max_len) ? max_len : len;
+	u16 space_len = (max_len - len) * 2;
+	for (i = 0, x = 0; i < space_len / 2; i++) {
+		OLED_ShowChar(x, y, ' '); 	// 显示一个空格字符
+		x += 8;
+	}
+	for (i = 0; i < len; i++) {
+		OLED_ShowOneHanzi(x, y, arr[i]); 	// 显示一个汉字
+		x += 16;
+	}
+	for (i = 0; i < space_len / 2; i++) {
+		OLED_ShowChar(x, y, ' '); 	// 显示一个空格字符
+		x += 8;
 	}
 }
 //-----------------------------------------------------------------------------

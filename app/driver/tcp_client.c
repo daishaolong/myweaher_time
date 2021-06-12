@@ -96,7 +96,7 @@ void ICACHE_FLASH_ATTR tcp_client_init(void) {
 //	os_memcpy(sta_netcon.proto.tcp->remote_ip,server_ip,sizeof(server_ip));//设置网络结构体远端IP
 	espconn_gethostbyname(&sta_netcon, SERVER_NAME, &server_ip, dns_found_cb);//域名解析
 
-	my_http_init();
+	myhttp_init();
 //	espconn_regist_connectcb(&sta_netcon, tcp_connnect_cb);	// 注册TCP连接成功建立的回调函数
 //	espconn_regist_reconcb(&sta_netcon, tcp_break_cb);		// 注册TCP连接异常断开的回调函数
 //	espconn_connect(&sta_netcon);	// 连接服务器

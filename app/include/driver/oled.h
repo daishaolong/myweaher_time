@@ -46,6 +46,7 @@ void ICACHE_FLASH_ATTR OLED_ShowIP(u8 x, u8 y, u8*Array_IP);
 void ICACHE_FLASH_ATTR OLED_ShowString_LineCenter(u8 y, u8 * Show_char);
 void ICACHE_FLASH_ATTR OLED_ShowOneHanzi(u8 x, u8 y, hanzi_t hanzi_num);
 void ICACHE_FLASH_ATTR OLED_ShowHanzi(u8 x, u8 y,const hanzi_t *arr,u8 len);
+void ICACHE_FLASH_ATTR OLED_ShowHanzi_LineCenter(u8 y, const hanzi_t *arr,u8 len);
 //=============================================================================
 
 #endif /* OLED_H_ */
