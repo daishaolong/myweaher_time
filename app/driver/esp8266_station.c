@@ -9,167 +9,12 @@
 #include "driver/ui.h"
 
 static station_connected_wifi_callback station_connected_wifi_cb = NULL; //成功连接wifi的回调函数--tcp/udp网络连接函数
+static os_timer_t timer_wifi_check;			// 定义软件定时器
 
 //注册sta成功连接wifi的回调函数
 void station_regist_connnetcd_cb(station_connected_wifi_callback connect_cb) {
 	station_connected_wifi_cb = connect_cb;
 }
-
-#if MYSMART_LINK_ENABLE
-
-//---------------------------智能配网宏定义--------------------------------
-#define SMARTLINK_KEY_PIN_NAME 		PERIPHS_IO_MUX_MTDI_U//智能配网按键引脚寄存器
-#define SMARTLINK_KEY_FUNC	 		FUNC_GPIO12//智能配网按键引脚功能
-#define SMARTLINK_KEY_GPIO_ID_PIN   	12//智能配网按键IO口ID
-#define SMARTLINK_KEY_READ	GPIO_INPUT_GET(GPIO_ID_PIN(SMARTLINK_KEY_GPIO_ID_PIN))//读取智能配网按键状态
-#define SMARTLINK_KEY_PRESS 			0 //智能配网按键按下
-
-//----------------------------静态函数--------------------------------
-//智能配网按键初始化
-static void ICACHE_FLASH_ATTR smartconfig_key_init(void) {
-	PIN_FUNC_SELECT(SMARTLINK_KEY_PIN_NAME, SMARTLINK_KEY_FUNC); //智能配网按键引脚配置成GPIO功能
-	GPIO_DIS_OUTPUT(GPIO_ID_PIN(SMARTLINK_KEY_GPIO_ID_PIN));//输入模式
-	PIN_PULLUP_EN(SMARTLINK_KEY_PIN_NAME);//使能上拉
-}
-//wifi事件处理回调函数
-static void ICACHE_FLASH_ATTR wifi_event_handler_cb(System_Event_t *evt) {
-	os_printf("event	%x\n", evt->event);
-	switch (evt->event) {
-//	case EVENT_STAMODE_CONNECTED://表示连上了路由，还需要经DHCP分配地址
-//		os_printf("connect	to	ssid	%s,	channel	%d\n",
-//		evt->event_info.connected.ssid,
-//		evt->event_info.connected.channel);
-//		break;
-		case EVENT_STAMODE_DISCONNECTED:
-		os_printf("disconnect	from	ssid	%s,	reason	%d\n",
-				evt->event_info.disconnected.ssid,
-				evt->event_info.disconnected.reason);
-		break;
-//	case EVENT_STAMODE_AUTHMODE_CHANGE:
-//		os_printf("mode:	%d	->	%d\n",
-//		evt->event_info.auth_change.old_mode,
-//		evt->event_info.auth_change.new_mode);
-//		break;
-		case EVENT_STAMODE_GOT_IP://DHCP成功，获取IP地址后，才开始进行
-		os_printf("ip:" IPSTR ",mask:" IPSTR ",gw:" IPSTR,
-				IP2STR(&evt->event_info.got_ip.ip),
-				IP2STR(&evt->event_info.got_ip.mask),
-				IP2STR(&evt->event_info.got_ip.gw));
-		os_printf("\n");
-		//初始化tcp server 或者client
-		if(station_connected_wifi_cb!=NULL)
-		{
-			station_connected_wifi_cb();		//执行wifi连接回调函数--tcp/udp网络连接函数
-		}
-		break;
-
-//	case EVENT_SOFTAPMODE_STACONNECTED:
-//		os_printf("station:	" MACSTR "join,	AID	=	%d\n",
-//		MAC2STR(evt->event_info.sta_connected.mac),
-//		evt->event_info.sta_connected.aid);
-//		break;
-//	case EVENT_SOFTAPMODE_STADISCONNECTED:
-//		os_printf("station:	" MACSTR "leave,	AID	=	%d\n",
-//		MAC2STR(evt->event_info.sta_disconnected.mac),
-//		evt->event_info.sta_disconnected.aid);
-//		break;
-		default:
-		break;
-	}
-
-}
-//智能配网连接过程回调函数
-static void ICACHE_FLASH_ATTR smart_link_cb(sc_status status, void *pdata) {
-	switch (status) {
-		case SC_STATUS_WAIT:		//连接未开始，请勿在此阶段开始连接
-		os_printf("SC_STATUS_WAIT, Do not open app smartlink\r\n");
-		break;
-		case SC_STATUS_FIND_CHANNEL://请在此阶段开启APP进行配对连接
-		os_printf("SC_STATUS_FIND_CHANNEL,open app smartlink\r\n");
-		break;
-		case SC_STATUS_GETTING_SSID_PSWD://获取到wifi名和密码
-		os_printf("SC_STATUS_GETTING_SSID_PSWD\n");
-		sc_type *type = pdata;//打印获取wifi名和密码的方式
-		if (*type == SC_TYPE_ESPTOUCH) {
-			os_printf("SC_TYPE:SC_TYPE_ESPTOUCH\n");		//ESPTOUCH软件发送
-		} else {
-			os_printf("SC_TYPE:SC_TYPE_AIRKISS\n");		//微信小程序发送
-		}
-		break;
-		case SC_STATUS_LINK:		//尝试连接路由
-		os_printf("SC_STATUS_LINK\n");
-		struct station_config *sta_conf = pdata;
-		wifi_station_set_config(sta_conf);
-		wifi_station_disconnect();
-		wifi_station_connect();
-		break;
-		case SC_STATUS_LINK_OVER://获取到IP，连接路由完成
-		os_printf("SC_STATUS_LINK_OVER\n");
-		if (pdata != NULL) {
-			uint8 phone_ip[4] = {0};
-			memcpy(phone_ip, (uint8*) pdata, 4);
-			os_printf("Phone	ip:	%d.%d.%d.%d\n", phone_ip[0], phone_ip[1],
-					phone_ip[2], phone_ip[3]);
-		}
-		uint8 esp8266_ip[4];
-		struct ip_info info;
-		wifi_get_ip_info(STATION_IF,&info);
-		os_memcpy(esp8266_ip,&info.ip,sizeof(esp8266_ip));
-		os_printf("esp8266	ip:	%d.%d.%d.%d\n", esp8266_ip[0], esp8266_ip[1],
-				esp8266_ip[2], esp8266_ip[3]);
-		smartconfig_stop();		//关闭智能配网
-		os_printf("smart link end!!!!!\r\n");
-//		os_printf("system restart\r\n");
-//		system_restart();//系统重启
-		if(station_connected_wifi_cb!=NULL)
-		{
-			station_connected_wifi_cb();		//执行wifi连接回调函数--tcp/udp网络连接函数
-		}
-		break;
-		default:
-		break;
-	}
-}
-//智能配网初始化函数
-static void ICACHE_FLASH_ATTR mysmart_link_init(void) {
-	smartconfig_set_type(SC_TYPE_AIRKISS);	//设置智能配网模式:ESPTOUCH  SC_TYPE_AIRKISS
-//	smartconfig_stop();//smartconfig_start未完成之前不可重复执行smartconfig_start,请先调用smartconfig_stop结束本次快连
-	smartconfig_start(smart_link_cb, 0);//开始智能配网，并设置回调函数；1：表示打印配网连接过程的信息
-	//smartconfig过程中不要调用其他API函数，当smartlink结束后，调用smartconfig_stop函数后再调用其他API函数
-}
-
-//--------------------------------全局函数-----------------------------
-//智能配网处理函数
-static void ICACHE_FLASH_ATTR mysmart_link(void) {
-	struct station_config config;
-	smartconfig_key_init();	//智能配网触发按键初始化
-	wifi_set_opmode(STATION_MODE);//设置WIFI模式:STA模式
-	os_memset(&config,0,sizeof(config));
-	wifi_station_get_config_default(&config);//获取保存在flash的配置参数
-	if (SMARTLINK_KEY_PRESS == SMARTLINK_KEY_READ || 0==os_strlen(config.ssid)||
-			0==os_strlen(config.password))//智能配网按键按下 或者wifi名 /密码为空
-	{
-		os_printf("smart link start!!!!!\r\n");
-		mysmart_link_init();	//初始化智能连接
-	} else {
-		os_printf("no smart link,connnect Ap\r\n");
-		os_printf("ssid:%s\r\n",config.ssid);
-		os_printf("password:%s\r\n",config.password);
-		wifi_set_event_handler_cb(wifi_event_handler_cb);	//注册wifi事件回调函数
-	}
-}
-void ICACHE_FLASH_ATTR esp8266_station_init(void)
-{
-	mysmart_link();
-}
-
-#else  //MYSMART_LINK_ENABLE
-
-//---------------------不用智能配网直接的STATION模式配置----------------------
-
-static os_timer_t timer_wifi_check;			// 定义软件定时器
-#define		ESP8266_STA_SSID	"1403"					// 接入的WIFI名
-#define		ESP8266_STA_PASS	"2009zhangyanyan"		// 接入的WIFI密码
 // 软件定时的回调函数
 //=========================================================================================================
 static void ICACHE_FLASH_ATTR timer_wifi_check_cb(void) {
@@ -196,6 +41,9 @@ static void ICACHE_FLASH_ATTR timer_wifi_check_cb(void) {
 		OLED_ShowString(0, 2, "ESP8266_IP:");
 		OLED_ShowIP(0, 4, ESP8266_IP);
 		OLED_ShowString(0, 6, "Please wait...");
+		system_soft_wdt_feed();
+		delay_ms(400);
+		system_soft_wdt_feed();
 		os_timer_disarm(&timer_wifi_check);	// 关闭定时器
 
 		if (station_connected_wifi_cb != NULL) {
@@ -207,8 +55,8 @@ static void ICACHE_FLASH_ATTR timer_wifi_check_cb(void) {
 			|| STATION_NO_AP_FOUND == connect_status
 			|| STATION_CONNECT_FAIL == connect_status) {
 		os_printf("STATION CONNECT FAIL,reson:\r\n");
-		OLED_Clear();
-		OLED_ShowString(0, 0, "Connected Fial ");
+//		OLED_Clear();
+		OLED_ShowString(0, 0, "Connected Fial:  ");
 		if (STATION_CONNECT_FAIL == connect_status) {
 			os_printf("STATION_CONNECT_FAIL\r\n");
 			OLED_ShowString(0, 2, "STATION_CONNECT_FAIL");
@@ -232,14 +80,143 @@ static void ICACHE_FLASH_ATTR timer_wifi_check_cb(void) {
 //=====================================================================================
 static void ICACHE_FLASH_ATTR timer_wifi_check_init(u32 time_ms,
 		u8 time_repetitive) {
+	struct	station_config	config;
+	wifi_station_get_config_default(&config);
 	OLED_ShowString(0, 0, "wifi:");
-	OLED_ShowString(0+strlen("wifi:")*8, 0, ESP8266_STA_SSID);
+	OLED_ShowString(0+strlen("wifi:")*8, 0, config.ssid);
 	OLED_ShowString(0, 2, "connecting .");
 	os_timer_disarm(&timer_wifi_check);	// 关闭定时器
 	os_timer_setfn(&timer_wifi_check, (os_timer_func_t *) timer_wifi_check_cb,
 			NULL);	// 设置定时器
 	os_timer_arm(&timer_wifi_check, time_ms, time_repetitive);  // 使能定时器
 }
+#if MYSMART_LINK_ENABLE
+
+//---------------------------智能配网宏定义--------------------------------
+#define SMARTLINK_KEY_PIN_NAME 		PERIPHS_IO_MUX_MTDI_U//智能配网按键引脚寄存器
+#define SMARTLINK_KEY_FUNC	 		FUNC_GPIO12//智能配网按键引脚功能
+#define SMARTLINK_KEY_GPIO_ID_PIN   	12//智能配网按键IO口ID
+#define SMARTLINK_KEY_READ	GPIO_INPUT_GET(GPIO_ID_PIN(SMARTLINK_KEY_GPIO_ID_PIN))//读取智能配网按键状态
+#define SMARTLINK_KEY_PRESS 			0 //智能配网按键按下
+
+
+//----------------------------静态函数--------------------------------
+//智能配网按键初始化
+static void ICACHE_FLASH_ATTR smartconfig_key_init(void) {
+	PIN_FUNC_SELECT(SMARTLINK_KEY_PIN_NAME, SMARTLINK_KEY_FUNC); //智能配网按键引脚配置成GPIO功能
+	GPIO_DIS_OUTPUT(GPIO_ID_PIN(SMARTLINK_KEY_GPIO_ID_PIN));//输入模式
+	PIN_PULLUP_EN(SMARTLINK_KEY_PIN_NAME);//使能上拉
+}
+
+
+//智能配网连接过程回调函数
+static void ICACHE_FLASH_ATTR smart_link_cb(sc_status status, void *pdata) {
+	switch (status) {
+		case SC_STATUS_WAIT:		//连接未开始，请勿在此阶段开始连接
+		os_printf("SC_STATUS_WAIT, Do not open app smartlink\r\n");
+		break;
+		case SC_STATUS_FIND_CHANNEL://请在此阶段开启APP进行配对连接
+		os_printf("SC_STATUS_FIND_CHANNEL,open app smartlink\r\n");
+		OLED_ShowString(0,2,"use weixin config ...");
+		break;
+		case SC_STATUS_GETTING_SSID_PSWD://获取到wifi名和密码
+		os_printf("SC_STATUS_GETTING_SSID_PSWD\n");
+		OLED_ShowString(0,2,"getting SSID PSWD ....");
+		sc_type *type = pdata;//打印获取wifi名和密码的方式
+		if (*type == SC_TYPE_ESPTOUCH) {
+			os_printf("SC_TYPE:SC_TYPE_ESPTOUCH\n");		//ESPTOUCH软件发送
+		} else {
+			os_printf("SC_TYPE:SC_TYPE_AIRKISS\n");		//微信小程序发送
+		}
+		break;
+		case SC_STATUS_LINK:		//尝试连接路由
+		os_printf("SC_STATUS_LINK\n");
+		OLED_ShowString(0,2,"connecting to wifi ....");
+		OLED_ShowString(0, 6, "please wait...");
+		struct station_config *sta_conf = pdata;
+		wifi_station_set_config(sta_conf);
+		wifi_station_disconnect();
+		wifi_station_connect();
+		break;
+		case SC_STATUS_LINK_OVER://获取到IP，连接路由完成
+		os_printf("SC_STATUS_LINK_OVER\n");
+		if (pdata != NULL) {
+			uint8 phone_ip[4] = {0};
+			memcpy(phone_ip, (uint8*) pdata, 4);
+			os_printf("Phone	ip:	%d.%d.%d.%d\n", phone_ip[0], phone_ip[1],
+					phone_ip[2], phone_ip[3]);
+		}
+		uint8 esp8266_ip[4];
+		struct ip_info info;
+		wifi_get_ip_info(STATION_IF,&info);
+		os_memcpy(esp8266_ip,&info.ip,sizeof(esp8266_ip));
+		os_printf("esp8266	ip:	%d.%d.%d.%d\n", esp8266_ip[0], esp8266_ip[1],
+				esp8266_ip[2], esp8266_ip[3]);
+		smartconfig_stop();		//关闭智能配网
+		os_printf("smart link end!!!!!\r\n");
+		OLED_ShowString(0, 0, "wifi connected  ");
+		OLED_ShowString(0, 2, "ESP8266_IP:     ");
+		OLED_ShowIP(0, 4, esp8266_ip);
+		OLED_ShowString(0, 6, "Please wait...  ");
+		system_soft_wdt_feed();
+		delay_ms(400);
+		system_soft_wdt_feed();
+//		os_printf("system restart\r\n");
+//		system_restart();//系统重启
+		if(station_connected_wifi_cb!=NULL)
+		{
+			station_connected_wifi_cb();		//执行wifi连接回调函数--tcp/udp网络连接函数
+		}
+		esp8266_sntp_init();
+		ui_display_start();
+		break;
+		default:
+		break;
+	}
+}
+//智能配网初始化函数
+static void ICACHE_FLASH_ATTR mysmart_link_init(void) {
+	smartconfig_set_type(SC_TYPE_AIRKISS);	//设置智能配网模式:ESPTOUCH  SC_TYPE_AIRKISS
+//	smartconfig_stop();//smartconfig_start未完成之前不可重复执行smartconfig_start,请先调用smartconfig_stop结束本次快连
+	smartconfig_start(smart_link_cb, 0);//开始智能配网，并设置回调函数；1：表示打印配网连接过程的信息
+	//smartconfig过程中不要调用其他API函数，当smartlink结束后，调用smartconfig_stop函数后再调用其他API函数
+}
+
+//--------------------------------全局函数-----------------------------
+//智能配网处理函数
+static void ICACHE_FLASH_ATTR mysmart_link(void) {
+	struct station_config config;
+	smartconfig_key_init();	//智能配网触发按键初始化
+	wifi_set_opmode(STATION_MODE);//设置WIFI模式:STA模式
+	os_memset(&config,0,sizeof(config));
+	wifi_station_get_config_default(&config);//获取保存在flash的配置参数
+	if (SMARTLINK_KEY_PRESS == SMARTLINK_KEY_READ || 0==os_strlen(config.ssid)||
+			0==os_strlen(config.password))//智能配网按键按下 或者wifi名 /密码为空
+	{
+		os_printf("smart link start!!!!!\r\n");
+		OLED_ShowString(0,0,"  wifi config ");
+		OLED_ShowString(0, 2, "please wait...");
+		mysmart_link_init();	//初始化智能连接
+	} else {
+		os_printf("no smart link,connnect Ap\r\n");
+		os_printf("ssid:%s\r\n",config.ssid);
+		os_printf("password:%s\r\n",config.password);
+//		wifi_set_event_handler_cb(wifi_event_handler_cb);	//注册wifi事件回调函数
+		timer_wifi_check_init(1000, 1);	//定时查询wifi连接状态
+	}
+}
+void ICACHE_FLASH_ATTR esp8266_station_init(void)
+{
+	mysmart_link();
+}
+
+#else  //MYSMART_LINK_ENABLE
+
+//---------------------不用智能配网直接的STATION模式配置----------------------
+
+
+#define		ESP8266_STA_SSID	"1403"					// 接入的WIFI名
+#define		ESP8266_STA_PASS	"2009zhangyanyan"		// 接入的WIFI密码
 // ESP8266_STA初始化
 //==============================================================================
 void ICACHE_FLASH_ATTR esp8266_station_init(void) {

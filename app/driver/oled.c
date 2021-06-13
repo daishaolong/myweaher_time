@@ -178,7 +178,7 @@ void ICACHE_FLASH_ATTR OLED_ShowChar(u8 x, u8 y, u8 Show_char) {
 	c = Show_char - ' '; 				// 获取字符的偏移量
 	if (c >= CHAR_SET_SIZE)
 		return;
-	if ((x + 8) > Max_Column - 1) {
+	if ((x + 8) > Max_Column) {
 		x = 0;
 		y = y + 2;
 	}	// 当列数超出范围，则另起2页
