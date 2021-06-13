@@ -164,7 +164,7 @@ static void ICACHE_FLASH_ATTR analysis_weather_json(void *arg) {
 //发送天气http请求
 void ICACHE_FLASH_ATTR send_weather_http_request(struct espconn *espconn) {
 	os_printf("ESP8266 WIFI Send Http:\r\n");
-	os_printf(weather_http_request);
+//	os_printf(weather_http_request);
 	wifi_recv_size=0;
 
 	os_timer_disarm(&wifi_recv_handle_timer);
@@ -178,14 +178,15 @@ void ICACHE_FLASH_ATTR send_weather_http_request(struct espconn *espconn) {
 void ICACHE_FLASH_ATTR recvice_weather_data(char *in_data,unsigned short in_len)
 {
 	uint16_t i;
+	os_timer_disarm(&wifi_recv_handle_timer);
+	os_timer_arm(&wifi_recv_handle_timer,100,0);
 	for(i=0;i<in_len &&wifi_recv_size<(WIFI_RECV_MAX_SIZE-1) ;i++)
 	{
 		wifi_recv_buf[wifi_recv_size]=in_data[i];
 		wifi_recv_size++;
 	}
 	wifi_recv_buf[wifi_recv_size]='\0';
-	os_timer_disarm(&wifi_recv_handle_timer);
-	os_timer_arm(&wifi_recv_handle_timer,100,0);
+
 }
 //获取天气信息
 weather_t * ICACHE_FLASH_ATTR get_weather_info(void) {

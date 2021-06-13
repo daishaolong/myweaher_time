@@ -13,13 +13,11 @@
 
 //静态全局变量
 static os_timer_t ui_timer;
-static os_timer_t display_weather_timer;
-static os_timer_t display_date_time_timer;
 
 //宏定义
 #define UI_DISPLAY_PERIOD_MS  	1000//定时周期
-#define UI_DISPLAY_TIMER_REPEAT		10//重复运行
-#define WEATHER_DISPLAY_PERIOD_MS (8*1000)//天气显示周期
+#define UI_DISPLAY_TIMER_REPEAT		1//重复运行
+#define WEATHER_DISPLAY_PERIOD_MS (30*1000)//天气显示周期
 
 //
 static const char * week_str[]={"Mon","Tue","Wed","Thu","Fri","Sat","Sun"};
@@ -175,27 +173,6 @@ static void ICACHE_FLASH_ATTR display_date_time(void)
 //				OLED_ShowHanzi(3*16,6,week_days[index],sizeof(week_days[index])/sizeof(week_days[index][0]));
 	OLED_ShowHanzi_LineCenter(6,week_days[index],sizeof(week_days[index])/sizeof(week_days[index][0]));
 }
-////
-//static void ICACHE_FLASH_ATTR display_weather_start(void)
-//{
-//	os_timer_disarm(&display_weather_timer);			//取消软件定时器定时
-//	os_timer_setfn(&display_weather_timer, display_weather, NULL);		//设置软件定时器的回调函数和回调函数的参数
-//	os_timer_arm(&display_weather_timer, 3000, 1);	//使能毫秒定时器
-//}
-//static void ICACHE_FLASH_ATTR display_weather_stop(void)
-//{
-//	os_timer_disarm(&display_weather_timer);			//取消软件定时器定时
-//}
-//static void ICACHE_FLASH_ATTR display_date_time_start(void)
-//{
-//	os_timer_disarm(&display_date_time_timer);			//取消软件定时器定时
-//	os_timer_setfn(&display_date_time_timer, display_date_time, NULL);		//设置软件定时器的回调函数和回调函数的参数
-//	os_timer_arm(&display_date_time_timer, 1000, 1);	//使能毫秒定时器
-//}
-//static void ICACHE_FLASH_ATTR display_date_time_stop(void)
-//{
-//	os_timer_disarm(&display_date_time_timer);			//取消软件定时器定时
-//}
 /******************************************************************************
  * FunctionName : ui_display
  * Description  : ui显示
@@ -206,10 +183,6 @@ static void ICACHE_FLASH_ATTR ui_display(void* arg) {
 	static uint16_t cnt = 0;
 	static uint16_t day_index=0;
 	static uint16_t times=0;
-
-//	display_weather_stop();
-//	display_date_time_start();
-
 	if (cnt >= (WEATHER_DISPLAY_PERIOD_MS / UI_DISPLAY_PERIOD_MS)) {
 		if(0==times)
 		{
@@ -217,19 +190,18 @@ static void ICACHE_FLASH_ATTR ui_display(void* arg) {
 			day_index=(day_index+1)%WEATHER_DAYS;
 		}
 		times++;
-		if(3==times)
+		if(times>=3)
 		{
 			times=0;
 			cnt=(0==day_index)?0:cnt;
 		}
-
-		system_soft_wdt_feed();			// 喂狗(防止ESP8266复位)
 	}
 	else
 	{
 		display_date_time();
+		cnt++;
 	}
-	cnt++;
+
 }
 /******************************************************************************
  * FunctionName : ui_display_start
@@ -251,7 +223,5 @@ void ICACHE_FLASH_ATTR ui_display_start(void) {
  *******************************************************************************/
 void ICACHE_FLASH_ATTR ui_display_stop(void) {
 	os_timer_disarm(&ui_timer);			//取消软件定时器定时
-	os_timer_disarm(&display_weather_timer);			//取消软件定时器定时
-	os_timer_disarm(&display_date_time_timer);			//取消软件定时器定时
 }
 

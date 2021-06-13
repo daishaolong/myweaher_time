@@ -25,8 +25,8 @@ static ip_addr_t server_ip; //服务器ip地址
 static void ICACHE_FLASH_ATTR tcp_server_recv_cb(void *arg, char *pdata,
 		unsigned short len) {
 	os_printf("\nESP8266_WIFI_Recv:\r\n");
-	os_printf(pdata);
-	os_printf(" \r\n");
+//	os_printf(pdata);
+//	os_printf(" \r\n");
 	recvice_weather_data(pdata, len);
 }
 //tcp服务器数据发送成功的回调函数
@@ -36,6 +36,7 @@ static void ICACHE_FLASH_ATTR tcp_server_sent_cb(void *arg) {
 //tcp服务器正常断开连接的回调函数
 static void ICACHE_FLASH_ATTR tcp_server_disconnect_cb(void *arg) {
 	os_printf("\nESP8266_TCP_Disconnect_OK\n");
+	espconn_connect(&sta_netcon);	// 连接服务器
 }
 // TCP连接异常断开时的回调函数【ESP8266作为TCP_Client，连接TCP_Server失败，也会进入此函数】
 //tcp异常断开的回调函数
