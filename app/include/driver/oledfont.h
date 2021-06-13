@@ -23,6 +23,25 @@ typedef enum {
 	HANZI_WEN,		//温
 	HANZI_SHESHIDU,	//℃
 	HANZI_QI1,		//气
+	HANZI_QING,		//晴
+	HANZI_JIAN,		//间
+	HANZI_DUO,		//多
+	HANZI_YUN,		//云
+	HANZI_YIN,		//阴
+	HANZI_ZHEN1,	//阵
+	HANZI_YU,		//雨
+	HANZI_LEI,		//雷
+	HANZI_XIAO,		//小
+	HANZI_ZHONG,	//中
+	HANZI_DA,		//大
+	HANZI_BAO,		//暴
+	HANZI_XUE,		//雪
+	HANZI_JIA,		//夹
+	HANZI_TE,		//特
+	HANZI_BING,		//冰
+	HANZI_BAO1,		//雹
+	HANZI_BU,		//部
+	HANZI_DONG,		//冻
 	HANZI_SET_SIZE
 } hanzi_t;
 

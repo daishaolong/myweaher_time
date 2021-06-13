@@ -127,7 +127,7 @@ static void ICACHE_FLASH_ATTR get_code_day(const char *json_data, uint8_t index,
 	if (FOUND_VALUE_OK
 			== find_value_by_key(json_data, index, str_key, str_bound, out_buf,
 					out_len))
-		os_printf("index:%d,humidity:%s%\r\n", index, out_buf);
+		os_printf("index:%d,code_day:%s\r\n", index, out_buf);
 }
 //获取晚上天气码
 static void ICACHE_FLASH_ATTR get_code_night(const char *json_data, uint8_t index,
@@ -137,7 +137,7 @@ static void ICACHE_FLASH_ATTR get_code_night(const char *json_data, uint8_t inde
 	if (FOUND_VALUE_OK
 			== find_value_by_key(json_data, index, str_key, str_bound, out_buf,
 					out_len))
-		os_printf("index:%d,humidity:%s%\r\n", index, out_buf);
+		os_printf("index:%d,code_night:%s\r\n", index, out_buf);
 }
 static void ICACHE_FLASH_ATTR analysis_weather_json(void *arg) {
 	uint8_t i;

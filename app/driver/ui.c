@@ -35,10 +35,88 @@ static s8 ICACHE_FLASH_ATTR get_week_index(char *str)
 	}
 	return -1;
 }
+//
+static const hanzi_t code0[]={HANZI_QING};//晴
+static const hanzi_t code1[]={HANZI_QING};//晴
+static const hanzi_t code2[]={HANZI_QING};//晴
+static const hanzi_t code3[]={HANZI_QING};//晴
+static const hanzi_t code4[]={HANZI_DUO,HANZI_YUN};//多云
+static const hanzi_t code5[]={HANZI_QING,HANZI_JIAN,HANZI_DUO,HANZI_YUN};//晴间多云
+static const hanzi_t code6[]={HANZI_QING,HANZI_JIAN,HANZI_DUO,HANZI_YUN};//晴间多云
+static const hanzi_t code7[]={HANZI_DA,HANZI_BU,HANZI_DUO,HANZI_YUN};//大部多云
+static const hanzi_t code8[]={HANZI_DA,HANZI_BU,HANZI_DUO,HANZI_YUN};//大部多云
+static const hanzi_t code9[]={HANZI_YIN};//阴
+static const hanzi_t code10[]={HANZI_ZHEN1,HANZI_YU};//阵雨
+static const hanzi_t code11[]={HANZI_LEI,HANZI_ZHEN1,HANZI_YU};//雷阵雨
+static const hanzi_t code12[]={HANZI_BING,HANZI_BAO1};//冰雹
+static const hanzi_t code13[]={HANZI_XIAO,HANZI_YU};//小雨
+static const hanzi_t code14[]={HANZI_ZHONG,HANZI_YU};//中雨
+static const hanzi_t code15[]={HANZI_DA,HANZI_YU};//大雨
+static const hanzi_t code16[]={HANZI_BAO,HANZI_YU};//暴雨
+static const hanzi_t code17[]={HANZI_DA,HANZI_BAO,HANZI_YU};//大暴雨
+static const hanzi_t code18[]={HANZI_TE,HANZI_DA,HANZI_BAO,HANZI_YU};//特大暴雨
+static const hanzi_t code19[]={HANZI_DONG,HANZI_YU};//冻雨
+static const hanzi_t code20[]={HANZI_YU,HANZI_JIA,HANZI_XUE};//雨夹雪
+static const hanzi_t code21[]={HANZI_ZHEN1,HANZI_XUE};//阵雪
+static const hanzi_t code22[]={HANZI_XIAO,HANZI_XUE};//小雪
+static const hanzi_t code23[]={HANZI_ZHONG,HANZI_XUE};//中雪
+static const hanzi_t code24[]={HANZI_DA,HANZI_XUE};//大雪
+static const hanzi_t code25[]={HANZI_BAO,HANZI_XUE};//暴雪
+typedef struct
+{
+	const hanzi_t * addr;
+	u16 len;
+}code_info_t;
+static const code_info_t code_info[]={
+		{code0,sizeof(code0)/sizeof(code0[0])},
+		{code1,sizeof(code1)/sizeof(code1[0])},
+		{code2,sizeof(code2)/sizeof(code2[0])},
+		{code3,sizeof(code3)/sizeof(code3[0])},
+		{code4,sizeof(code4)/sizeof(code4[0])},
+		{code5,sizeof(code5)/sizeof(code5[0])},
+		{code6,sizeof(code6)/sizeof(code6[0])},
+		{code7,sizeof(code7)/sizeof(code7[0])},
+		{code8,sizeof(code8)/sizeof(code8[0])},
+		{code9,sizeof(code9)/sizeof(code9[0])},
+		{code10,sizeof(code10)/sizeof(code10[0])},
+		{code11,sizeof(code11)/sizeof(code11[0])},
+		{code12,sizeof(code12)/sizeof(code12[0])},
+		{code13,sizeof(code13)/sizeof(code13[0])},
+		{code14,sizeof(code14)/sizeof(code14[0])},
+		{code15,sizeof(code15)/sizeof(code15[0])},
+		{code16,sizeof(code16)/sizeof(code16[0])},
+		{code17,sizeof(code17)/sizeof(code17[0])},
+		{code18,sizeof(code18)/sizeof(code18[0])},
+		{code19,sizeof(code19)/sizeof(code19[0])},
+		{code20,sizeof(code20)/sizeof(code20[0])},
+		{code21,sizeof(code21)/sizeof(code21[0])},
+		{code22,sizeof(code22)/sizeof(code22[0])},
+		{code23,sizeof(code23)/sizeof(code23[0])},
+		{code24,sizeof(code24)/sizeof(code24[0])},
+		{code25,sizeof(code25)/sizeof(code25[0])},
+};
+#define CODE_INFO_SIZE (sizeof(code_info)/sizeof(code_info[0]))
+//由天气气象码获取提示汉字提示信息
+static void ICACHE_FLASH_ATTR get_info_by_code(const char *code,const hanzi_t **out,u16* out_len)
+{
+	s32 num=atoi(code);
+	if(num<0 || num>=CODE_INFO_SIZE)
+	{
+		(*out_len)=0;
+		return ;
+	}
+
+	(*out)=code_info[num].addr;
+	(*out_len)=code_info[num].len;
+
+//	os_printf("code:%s,%d;out_len:%d\r\n",code,num,*out_len);
+}
 //显示天气
 static void ICACHE_FLASH_ATTR display_weather(u8 index)
 {
 	u8 x;
+	u16 out_len;
+	const hanzi_t *hanzi;
 	char buf[WEATHER_CHAR_LEN*2];
 	hanzi_t days[WEATHER_DAYS][2]={{HANZI_JIN,HANZI_TIAN},{HANZI_MING,HANZI_TIAN},{HANZI_HOU,HANZI_TIAN}};
 	weather_t* weather=get_weather_info();
@@ -61,8 +139,10 @@ static void ICACHE_FLASH_ATTR display_weather(u8 index)
 	hanzi_t tianqi[]={HANZI_TIAN,HANZI_QI1};
 	OLED_ShowHanzi(0,4,tianqi,sizeof(tianqi)/sizeof(tianqi[0]));
 	x=sizeof(tianqi)/sizeof(tianqi[0])*16;
-	os_sprintf(buf,":%s-%s",weather[index].code_day,weather[index].code_night);//天气码
-	OLED_ShowString(x,4,buf);
+	OLED_ShowString(x,4,":");
+	x+=8;
+	get_info_by_code(weather[index].code_day,&hanzi,&out_len);
+	OLED_ShowHanzi(x,4,hanzi,out_len);
 
 	os_sprintf(buf,":%s%",weather[index].humidity);//湿度
 	hanzi_t shidu[]={HANZI_SHI,HANZI_DU};
